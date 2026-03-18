@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="通过科学测试发现你的核心天赋优势">
+    
+    <title>天赋测评 - 发现你的核心优势</title>
+    
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect fill='%23667eea' width='180' height='180' rx='40'/%3E%3Ctext x='90' y='115' font-size='80' text-anchor='middle'%3E🎯%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23667eea' width='192' height='192' rx='48'/%3E%3Ctext x='96' y='125' font-size='85' text-anchor='middle'%3E🎯%3C/text%3E%3C/svg%3E">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior-y: none;
+        }
+        
+        html {
+            height: -webkit-fill-available;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .option-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        
+        .option-card:active {
+            transform: scale(0.98);
+        }
+        
+        .option-card.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse-ring {
+            position: absolute;
+            border-radius: 50%;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); opacity: 1; }
+            40%, 50% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+        
+        .no-bounce {
+            overscroll-behavior: none;
+        }
+        
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .btn-active:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+        }
+        
+        .ios-bottom-fix {
+            padding-bottom: max(env(safe-area-inset-bottom), 20px);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+        
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 240px;
+            }
+        }
+        
+        /* 结果卡片样式 */
+        .result-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease;
+        }
+        
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 50%);
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .badge-stamp {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 48px;
+            height: 56px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 10;
+            transform: rotate(3deg);
+            border: 2px solid rgba(0,0,0,0.1);
+        }
+        
+        .badge-stamp::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 1px dashed rgba(0,0,0,0.2);
+            border-radius: 2px;
+        }
+        
+        .postmark {
+            position: absolute;
+            top: 20px;
+            right: 70px;
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255,255,255,0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.8);
+            transform: rotate(-15deg);
+            z-index: 9;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .result-icon {
+            font-size: 80px;
+            position: absolute;
+            opacity: 0.15;
+            z-index: 1;
+            filter: blur(2px);
+        }
+        
+        .dots-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.1) 2px, transparent 2px);
+            background-size: 20px 20px;
+            opacity: 0.5;
+        }
+        
+        .match-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.95);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .talent-tag {
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.2s;
+        }
+        
+        .talent-tag:hover {
+            background: rgba(255,255,255,0.4);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="text-gray-800 no-bounce">
+
+    <div class="container mx-auto px-4 py-6 max-w-4xl min-h-screen flex flex-col">
+        
+        <header class="text-center mb-6 text-white safe-top">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2 tracking-tight">🎯 天赋测评</h1>
+            <p class="text-sm md:text-base opacity-90">20道题目，全方位发现你的核心优势</p>
+        </header>
+
+        <!-- 开始页面 -->
+        <div id="startScreen" class="glass-panel rounded-2xl p-6 md:p-8 text-center shadow-2xl flex-1 flex flex-col justify-center">
+            <div class="mb-6">
+                <div class="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mx-auto mb-4 flex items-center justify-center text-3xl shadow-lg">
+                    ✨
+                </div>
+                <h2 class="text-xl font-bold mb-3 text-gray-800">探索你的天赋优势</h2>
+                <p class="text-gray-600 mb-4 text-sm leading-relaxed px-2">
+                    基于8个维度、20道科学题目<br>
+                    全方位评估，发现你的核心竞争力
+                </p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mb-6 text-left">
+                <div class="bg-purple-50 p-3 rounded-xl border border-purple-100">
+                    <div class="text-xl mb-1">🧠</div>
+                    <div class="font-semibold text-purple-800 text-xs">科学算法</div>
+                    <div class="text-xs text-purple-600 scale-90 origin-left">多维评估</div>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                    <div class="text-xl mb-1">📊</div>
+                    <div class="font-semibold text-blue-800 text-xs">可视化</div>
+                    <div class="text-xs text-blue-600 scale-90 origin-left">雷达分析</div>
+                </div>
+                <div class="bg-pink-50 p-3 rounded-xl border border-pink-100">
+                    <div class="text-xl mb-1">🎨</div>
+                    <div class="font-semibold text-pink-800 text-xs">个性化</div>
+                    <div class="text-xs text-pink-600 scale-90 origin-left">专属报告</div>
+                </div>
+            </div>
+
+            <button onclick="startTest()" class="btn-active bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3.5 rounded-full text-base font-bold shadow-lg w-full">
+                开始测试
+            </button>
+            <p class="mt-3 text-xs text-gray-500">预计用时 3-4 分钟 · 20道题目</p>
+        </div>
+
+        <!-- 测试页面 -->
+        <div id="quizScreen" class="hidden glass-panel rounded-2xl p-5 shadow-2xl flex-1 flex flex-col">
+            <div class="mb-4">
+                <div class="flex justify-between mb-1.5 text-xs font-medium text-gray-600">
+                    <span id="progressText">第 1 / 20 题</span>
+                    <span id="progressPercent">5%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progressBar" class="progress-bar bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style="width: 5%"></div>
+                </div>
+            </div>
+
+            <div id="questionContainer" class="fade-in flex-1 flex flex-col">
+                <h3 id="questionText" class="text-lg font-bold mb-4 text-gray-800 leading-snug"></h3>
+                <div id="optionsContainer" class="space-y-3 flex-1"></div>
+            </div>
+
+            <div class="mt-4 flex justify-between items-center ios-bottom-fix">
+                <button id="prevBtn" onclick="previousQuestion()" class="hidden px-4 py-2 text-gray-500 text-sm font-medium active:text-gray-700 transition-colors btn-active">
+                    ← 上一题
+                </button>
+                <div class="flex-1"></div>
+            </div>
+        </div>
+
+        <!-- 加载页面 -->
+        <div id="loadingScreen" class="hidden glass-panel rounded-2xl p-8 text-center shadow-2xl flex-1 flex flex-col justify-center items-center">
+            <div class="relative w-24 h-24 mb-6">
+                <div class="pulse-ring bg-purple-400 w-full h-full"></div>
+                <div class="pulse-ring bg-purple-400 w-full h-full" style="animation-delay: 0.5s"></div>
+                <div class="relative w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-3xl shadow-lg">
+                    🧮
+                </div>
+            </div>
+            <h2 class="text-lg font-bold mb-2 text-gray-800">正在分析数据...</h2>
+            <p id="loadingText" class="text-gray-600 text-sm">正在计算你的天赋维度...</p>
+        </div>
+
+        <!-- 结果页面 -->
+        <div id="resultScreen" class="hidden space-y-4 pb-6">
+            
+            <!-- 最佳匹配卡片 -->
+            <div id="topResultCard" class="result-card p-5 min-h-[320px] flex flex-col justify-between relative" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="badge-stamp">
+                    <span id="stampEmoji">🏆</span>
+                    <span class="text-[8px] mt-1 text-gray-500">TOP1</span>
+                </div>
+                <div class="postmark">
+                    <span>天赋<br>认证</span>
+                </div>
+                
+                <div class="result-icon" id="resultIcon">🌟</div>
+                
+                <div class="relative z-10 flex flex-col h-full justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="match-badge text-purple-700">
+                                <span>💎</span>
+                                <span id="matchScore">优势度 95%</span>
+                            </span>
+                        </div>
+                        <h2 id="resultTitle" class="text-4xl font-bold text-white mb-1 drop-shadow-lg tracking-wider">创意架构师</h2>
+                        <p id="resultSubtitle" class="text-white/90 text-sm font-medium drop-shadow-md">创造力 × 逻辑思维</p>
+                    </div>
+                    
+                    <div class="space-y-3 mt-4">
+                        <div class="flex flex-wrap gap-2" id="resultTags">
+                            <!-- 动态标签 -->
+                        </div>
+                        <p id="resultDesc" class="text-white/95 text-sm leading-relaxed drop-shadow-md line-clamp-3"></p>
+                    </div>
+                </div>
+                
+                <div class="dots-pattern"></div>
+            </div>
+
+            <!-- 雷达图 -->
+            <div class="glass-panel rounded-2xl p-4 shadow-lg">
+                <h3 class="text-base font-bold mb-3 text-gray-800 text-center">📊 天赋维度分析</h3>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 核心优势 -->
+            <div class="glass-panel rounded-2xl p-5 shadow-lg bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+                <h3 class="text-base font-bold mb-2 text-amber-900 flex items-center gap-2">
+                    <span>💡</span> 核心优势解读
+                </h3>
+                <p id="coreAdvantage" class="text-amber-800 text-sm leading-relaxed"></p>
+            </div>
+
+            <!-- 其他天赋 - 小卡片 -->
+            <div class="grid grid-cols-2 gap-3">
+                <div id="secondTalent" class="result-card p-4 min-h-[160px] flex flex-col justify-between relative cursor-pointer" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="badge-stamp" style="width: 36px; height: 44px; font-size: 14px;">
+                        <span>🥈</span>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="match-badge text-sm mb-1" style="padding: 4px 8px;">
+                            <span class="second-score">85%</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1 drop-shadow-md second-name"></h3>
+                        <p class="text-white/80 text-xs line-clamp-2 second-desc"></p>
+                    </div>
+                    <div class="dots-pattern"></div>
+                </div>
+                
+                <div id="thirdTalent" class="result-card p-4 min-h-[160px] flex flex-col justify-between relative cursor-pointer" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="badge-stamp" style="width: 36px; height: 44px; font-size: 14px;">
+                        <span>🥉</span>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="match-badge text-sm mb-1" style="padding: 4px 8px;">
+                            <span class="third-score">78%</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1 drop-shadow-md third-name"></h3>
+                        <p class="text-white/80 text-xs line-clamp-2 third-desc"></p>
+                    </div>
+                    <div class="dots-pattern"></div>
+                </div>
+            </div>
+
+            <!-- 详细维度 -->
+            <div class="glass-panel rounded-2xl p-5 shadow-lg">
+                <h3 class="text-base font-bold mb-4 text-gray-800">🎭 你的天赋画像</h3>
+                <div id="dimensionAnalysis" class="space-y-2 max-h-64 overflow-y-auto hide-scrollbar">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 发展建议 -->
+            <div class="glass-panel rounded-2xl p-5 shadow-lg">
+                <h3 class="text-base font-bold mb-3 text-gray-800">🚀 发展建议</h3>
+                <div id="adviceList" class="space-y-3">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="grid grid-cols-2 gap-3 ios-bottom-fix">
+                <button onclick="shareResult()" class="btn-active bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-full font-bold text-sm shadow-lg flex items-center justify-center gap-2">
+                    <span>📤</span> 分享报告
+                </button>
+                <button onclick="restartTest()" class="btn-active bg-white text-purple-600 py-3 rounded-full font-bold text-sm shadow-lg border-2 border-purple-600 flex items-center justify-center gap-2">
+                    <span>🔄</span> 再测一次
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 天赋配置
+        const talentConfig = {
+            creativity: {
+                name: "创造力",
+                icon: "🎨",
+                color: "#ec4899",
+                desc: "你拥有丰富的想象力，善于从多角度思考问题，能够提出新颖独特的解决方案。",
+                advice: "多参与创意类项目，尝试头脑风暴，你的创新思维是宝贵的资源。",
+                combo: "创新架构师",
+                tags: ["想象力", "艺术感", "发散思维"]
+            },
+            logic: {
+                name: "逻辑思维",
+                icon: "🧠",
+                color: "#3b82f6",
+                desc: "你善于理性分析，能够快速拆解复杂问题，找出事物间的规律和关联。",
+                advice: "培养数据分析、编程或工程能力，你适合需要严密推理的工作。",
+                combo: "系统规划师",
+                tags: ["分析力", "条理性", "理性决策"]
+            },
+            empathy: {
+                name: "共情能力",
+                icon: "❤️",
+                color: "#ef4444",
+                desc: "你对他人情绪敏感，善于理解不同立场，能够建立良好的人际关系。",
+                advice: "发挥人际优势，考虑从事教育、咨询、人力资源等领域。",
+                combo: "情感设计师",
+                tags: ["亲和力", "洞察力", "沟通力"]
+            },
+            strategy: {
+                name: "战略思维",
+                icon: "♟️",
+                color: "#8b5cf6",
+                desc: "你具备全局视野，善于规划布局，能够在复杂情况下做出最优决策。",
+                advice: "学习商业和管理知识，你的统筹能力在团队中极具价值。",
+                combo: "战略指挥官",
+                tags: ["大局观", "规划力", "决策力"]
+            },
+            adapt: {
+                name: "适应能力",
+                icon: "🌊",
+                color: "#06b6d4",
+                desc: "你灵活多变，面对变化能够快速调整，在不确定环境中表现优异。",
+                advice: "拥抱变化，尝试跨领域发展，你的灵活性是核心竞争力。",
+                combo: "百变达人",
+                tags: ["灵活性", "应变力", "开放性"]
+            },
+            learn: {
+                name: "学习能力",
+                icon: "📚",
+                color: "#f59e0b",
+                desc: "你求知欲强，掌握新知识速度快，能够持续自我提升和迭代。",
+                advice: "建立知识体系，培养T型能力，成为复合型人才。",
+                combo: "知识专家",
+                tags: ["求知欲", "成长型", "知识储备"]
+            },
+            focus: {
+                name: "专注力",
+                icon: "🎯",
+                color: "#dc2626",
+                desc: "你能够长时间保持注意力，深入钻研问题，高质量完成任务。",
+                advice: "选择需要深度工作的领域，保护你的专注时间。",
+                combo: "深度专家",
+                tags: ["专注力", "持久力", "精品意识"]
+            },
+            intuition: {
+                name: "直觉判断",
+                icon: "✨",
+                color: "#a855f7",
+                desc: "你第六感敏锐，能够在信息有限时做出准确判断，善于捕捉机会。",
+                advice: "记录直觉决策并验证，培养对潜意识的信任。",
+                combo: "灵感捕手",
+                tags: ["第六感", "敏锐度", "预见性"]
+            }
+        };
+
+        // 组合称号映射
+        const comboTitles = {
+            "creativity-logic": "创意架构师",
+            "creativity-empathy": "情感设计师",
+            "creativity-strategy": "创新战略家",
+            "creativity-adapt": "创意变色龙",
+            "creativity-learn": "学习型创作者",
+            "creativity-focus": "深度创作者",
+            "creativity-intuition": "灵感艺术家",
+            "logic-empathy": "理性倾听者",
+            "logic-strategy": "系统指挥官",
+            "logic-adapt": "灵活分析师",
+            "logic-learn": "知识工程师",
+            "logic-focus": "精密专家",
+            "logic-intuition": "直觉分析师",
+            "empathy-strategy": "心灵统帅",
+            "empathy-adapt": "社交达人",
+            "empathy-learn": "成长型陪伴者",
+            "empathy-focus": "深度倾听者",
+            "empathy-intuition": "直觉共情者",
+            "strategy-adapt": "敏捷战略家",
+            "strategy-learn": "学习型领导者",
+            "strategy-focus": "专注执行者",
+            "strategy-intuition": "预见型领袖",
+            "adapt-learn": "进化学者",
+            "adapt-focus": "灵活专才",
+            "adapt-intuition": "直觉适应者",
+            "learn-focus": "知识匠人",
+            "learn-intuition": "直觉学者",
+            "focus-intuition": "直觉专才"
+        };
+
+        // 20道测试题目
+        const questions = [
+            {
+                text: "如果明天不用上学/上班，你会怎么安排？",
+                options: [
+                    { text: "制定详细计划，把想做的事都列出来", scores: { logic: 3, strategy: 2 } },
+                    { text: "随心所欲，想到什么就做什么", scores: { creativity: 3, intuition: 2 } },
+                    { text: "约朋友一起出去玩", scores: { empathy: 3, adapt: 2 } },
+                    { text: "学习一项新技能或读一本书", scores: { learn: 3, focus: 2 } }
+                ]
+            },
+            {
+                text: "在小组作业中，你通常是？",
+                options: [
+                    { text: "提出新奇有趣的点子", scores: { creativity: 3, intuition: 2 } },
+                    { text: "负责整理资料，确保不出错", scores: { logic: 3, focus: 2 } },
+                    { text: "协调大家分工，照顾每个人", scores: { empathy: 3, strategy: 2 } },
+                    { text: "快速学习新知识来完成任务", scores: { learn: 3, adapt: 2 } }
+                ]
+            },
+            {
+                text: "遇到突发状况（比如计划突然改变），你会？",
+                options: [
+                    { text: "冷静分析，迅速想出新方案", scores: { logic: 3, adapt: 2 } },
+                    { text: "跟着感觉走，随机应变", scores: { intuition: 3, adapt: 2 } },
+                    { text: "先安抚大家的情绪", scores: { empathy: 3, strategy: 2 } },
+                    { text: "专注解决问题，不被干扰", scores: { focus: 3, logic: 2 } }
+                ]
+            },
+            {
+                text: "你最喜欢的休闲方式是？",
+                options: [
+                    { text: "画画、写作或做手工", scores: { creativity: 3, intuition: 2 } },
+                    { text: "玩解谜游戏或数独", scores: { logic: 3, focus: 2 } },
+                    { text: "和朋友聊天聚会", scores: { empathy: 3, adapt: 2 } },
+                    { text: "看纪录片或学习新知识", scores: { learn: 3, strategy: 2 } }
+                ]
+            },
+            {
+                text: "面对一道难题，你的第一反应是？",
+                options: [
+                    { text: "尝试不同的奇怪方法", scores: { creativity: 3, adapt: 2 } },
+                    { text: "一步步分析，找规律", scores: { logic: 3, strategy: 2 } },
+                    { text: "先放一放，等灵感来了再说", scores: { intuition: 3, creativity: 2 } },
+                    { text: "查资料，学习相关知识", scores: { learn: 3, focus: 2 } }
+                ]
+            },
+            {
+                text: "朋友们通常找你帮忙是因为？",
+                options: [
+                    { text: "你总能想出有趣的点子", scores: { creativity: 3, intuition: 2 } },
+                    { text: "你做事靠谱，不会出错", scores: { logic: 3, focus: 2 } },
+                    { text: "你很会安慰人，懂他们", scores: { empathy: 3, intuition: 2 } },
+                    { text: "你知识面广，什么都知道一点", scores: { learn: 3, adapt: 2 } }
+                ]
+            },
+            {
+                text: "如果可以选择一种超能力，你想要？",
+                options: [
+                    { text: "能创造出任何东西", scores: { creativity: 3, intuition: 2 } },
+                    { text: "超级大脑，算无遗策", scores: { logic: 3, strategy: 2 } },
+                    { text: "读心术，理解所有人", scores: { empathy: 3, intuition: 2 } },
+                    { text: "瞬间学会任何技能", scores: { learn: 3, adapt: 2 } }
+                ]
+            },
+            {
+                text: "你的房间/桌面通常是？",
+                options: [
+                    { text: "有点乱，但每件东西都有它的位置", scores: { creativity: 3, intuition: 2 } },
+                    { text: "整洁有序，东西分类摆放", scores: { logic: 3, focus: 2 } },
+                    { text: "温馨舒适，有很多回忆物品", scores: { empathy: 3, creativity: 2 } },
+                    { text: "有很多书籍和学习资料", scores: { learn: 3, strategy: 2 } }
+                ]
+            },
+            {
+                text: "在派对或聚会中，你倾向于？",
+                options: [
+                    { text: "讲笑话，活跃气氛", scores: { creativity: 3, adapt: 2 } },
+                    { text: "观察大家，找有趣的人聊天", scores: { empathy: 3, intuition: 2 } },
+                    { text: "找个角落安静待着", scores: { focus: 3, logic: 2 } },
+                    { text: "认识新朋友，了解他们的故事", scores: { learn: 3, empathy: 2 } }
+                ]
+            },
+            {
+                text: "你更在意事物的？",
+                options: [
+                    { text: "美感和独特性", scores: { creativity: 3, intuition: 2 } },
+                    { text: "逻辑性和实用性", scores: { logic: 3, strategy: 2 } },
+                    { text: "对人的影响和感受", scores: { empathy: 3, strategy: 2 } },
+                    { text: "能否带来新的成长", scores: { learn: 3, adapt: 2 } }
+                ]
+            },
+            {
+                text: "完成一项任务后，你会？",
+                options: [
+                    { text: "庆祝一下，然后想下一个创意", scores: { creativity: 3, intuition: 2 } },
+                    { text: "复盘总结，看哪里可以优化", scores: { logic: 3, strategy: 2 } },
+                    { text: "感谢帮助过你的人", scores: { empathy: 3, adapt: 2 } },
+                    { text: "马上开始学习新东西", scores: { learn: 3, focus: 2 } }
+                ]
+            },
+            {
+                text: "描述自己时，你最认同的词是？",
+                options: [
+                    { text: "天马行空", scores: { creativity: 3, intuition: 2 } },
+                    { text: "理性冷静", scores: { logic: 3, focus: 2 } },
+                    { text: "善解人意", scores: { empathy: 3, strategy: 2 } },
+                    { text: "好学不倦", scores: { learn: 3, adapt: 2 } }
+                ]
+            },
+            {
+                text: "面对一个全新领域，你会？",
+                options: [
+                    { text: "先凭直觉尝试，边做边学", scores: { intuition: 3, creativity: 2 } },
+                    { text: "系统学习理论知识再实践", scores: { learn: 3, logic: 2 } },
+                    { text: "找懂行的人请教经验", scores: { empathy: 3, strategy: 2 } },
+                    { text: "直接动手，在实践中摸索", scores: { adapt: 3, focus: 2 } }
+                ]
+            },
+            {
+                text: "工作中遇到冲突，你通常？",
+                options: [
+                    { text: "用创意方式化解，转移注意力", scores: { creativity: 3, empathy: 2 } },
+                    { text: "分析各方立场，找最优解", scores: { logic: 3, strategy: 2 } },
+                    { text: "倾听各方感受，促成和解", scores: { empathy: 3, intuition: 2 } },
+                    { text: "专注目标，不被情绪干扰", scores: { focus: 3, logic: 2 } }
+                ]
+            },
+            {
+                text: "你的理想工作状态是？",
+                options: [
+                    { text: "自由创意，没有固定流程", scores: { creativity: 3, adapt: 2 } },
+                    { text: "目标清晰，有明确KPI", scores: { logic: 3, focus: 2 } },
+                    { text: "团队协作，互相支持", scores: { empathy: 3, strategy: 2 } },
+                    { text: "持续挑战，不断学新东西", scores: { learn: 3, adapt: 2 } }
+                ]
+            },
+            {
+                text: "做决策时，你更依赖？",
+                options: [
+                    { text: "直觉和第一印象", scores: { intuition: 3, creativity: 2 } },
+                    { text: "数据和事实分析", scores: { logic: 3, strategy: 2 } },
+                    { text: "听取信任的人的建议", scores: { empathy: 3, strategy: 2 } },
+                    { text: "过往经验和案例参考", scores: { learn: 3, logic: 2 } }
+                ]
+            },
+            {
+                text: "你更喜欢哪种反馈方式？",
+                options: [
+                    { text: "自由讨论，碰撞想法", scores: { creativity: 3, empathy: 2 } },
+                    { text: "具体指出问题和改进点", scores: { logic: 3, focus: 2 } },
+                    { text: "先肯定优点，再提建议", scores: { empathy: 3, intuition: 2 } },
+                    { text: "给资源让我自己摸索", scores: { learn: 3, adapt: 2 } }
+                ]
+            },
+            {
+                text: "周末独处时，你更喜欢？",
+                options: [
+                    { text: "创作点什么，画画或写作", scores: { creativity: 3, focus: 2 } },
+                    { text: "整理规划，做下周计划", scores: { logic: 3, strategy: 2 } },
+                    { text: "追剧或打游戏放松", scores: { empathy: 2, adapt: 2 } },
+                    { text: "学一门新课程或技能", scores: { learn: 3, focus: 2 } }
+                ]
+            },
+            {
+                text: "面对失败，你的反应是？",
+                options: [
+                    { text: "换个角度想，可能有新机会", scores: { creativity: 3, adapt: 2 } },
+                    { text: "分析原因，避免再犯", scores: { logic: 3, learn: 2 } },
+                    { text: "找人倾诉，寻求支持", scores: { empathy: 3, intuition: 2 } },
+                    { text: "马上投入下一件事", scores: { adapt: 3, focus: 2 } }
+                ]
+            },
+            {
+                text: "你更向往的生活方式是？",
+                options: [
+                    { text: "充满创意和惊喜", scores: { creativity: 3, intuition: 2 } },
+                    { text: "稳定有序可预期", scores: { logic: 3, focus: 2 } },
+                    { text: "温暖有人情味", scores: { empathy: 3, strategy: 2 } },
+                    { text: "不断成长进化", scores: { learn: 3, adapt: 2 } }
+                ]
+            }
+        ];
+
+        const dimensions = ['创造力', '逻辑思维', '共情能力', '战略思维', '适应能力', '学习能力', '专注力', '直觉判断'];
+
+        let currentQuestion = 0;
+        let answers = [];
+        let scores = {
+            creativity: 0, logic: 0, empathy: 0, strategy: 0,
+            adapt: 0, learn: 0, focus: 0, intuition: 0
+        };
+
+        function startTest() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('quizScreen').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = questions[currentQuestion];
+            document.getElementById('questionText').textContent = q.text;
+            
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const div = document.createElement('div');
+                div.className = 'option-card bg-white border-2 border-gray-200 rounded-xl p-3.5 cursor-pointer flex items-center gap-3 text-sm';
+                div.onclick = () => selectOption(idx);
+                div.innerHTML = `
+                    <div class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 option-letter flex-shrink-0">${String.fromCharCode(65 + idx)}</div>
+                    <div class="flex-1 text-left font-medium leading-snug">${opt.text}</div>
+                `;
+                container.appendChild(div);
+            });
+
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `第 ${currentQuestion + 1} / ${questions.length} 题`;
+            document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+
+            document.getElementById('prevBtn').classList.toggle('hidden', currentQuestion === 0);
+            
+            if (answers[currentQuestion] !== undefined) {
+                selectOption(answers[currentQuestion], false);
+            }
+        }
+
+        function selectOption(idx, autoNext = true) {
+            const cards = document.querySelectorAll('.option-card');
+            cards.forEach((card, i) => {
+                if (i === idx) {
+                    card.classList.add('selected');
+                    card.querySelector('.option-letter').classList.remove('bg-gray-100', 'text-gray-600');
+                    card.querySelector('.option-letter').classList.add('bg-white', 'text-purple-600');
+                } else {
+                    card.classList.remove('selected');
+                    card.querySelector('.option-letter').classList.add('bg-gray-100', 'text-gray-600');
+                    card.querySelector('.option-letter').classList.remove('bg-white', 'text-purple-600');
+                }
+            });
+            
+            answers[currentQuestion] = idx;
+            
+            const q = questions[currentQuestion];
+            const selected = q.options[idx];
+            for (let [key, val] of Object.entries(selected.scores)) {
+                scores[key] += val;
+            }
+            
+            if (autoNext) {
+                setTimeout(() => {
+                    if (currentQuestion < questions.length - 1) {
+                        currentQuestion++;
+                        showQuestion();
+                    } else {
+                        calculateResult();
+                    }
+                }, 300);
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                if (answers[currentQuestion] !== undefined) {
+                    const q = questions[currentQuestion];
+                    const selected = q.options[answers[currentQuestion]];
+                    for (let [key, val] of Object.entries(selected.scores)) {
+                        scores[key] -= val;
+                    }
+                    answers[currentQuestion] = undefined;
+                }
+                
+                currentQuestion--;
+                showQuestion();
+            }
+        }
+
+        function calculateResult() {
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            
+            const texts = ["分析天赋维度...", "计算优势组合...", "生成专属报告...", "优化视觉效果..."];
+            let step = 0;
+            const interval = setInterval(() => {
+                if (step < texts.length) {
+                    document.getElementById('loadingText').textContent = texts[step];
+                    step++;
+                } else {
+                    clearInterval(interval);
+                    showResults();
+                }
+            }, 400);
+        }
+
+        function showResults() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+
+            const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            const [first, second, third] = sorted;
+            
+            const firstConfig = talentConfig[first[0]];
+            const secondConfig = talentConfig[second[0]];
+            const thirdConfig = talentConfig[third[0]];
+            
+            const maxScore = 25;
+            const firstPercent = Math.min(100, Math.round((first[1] / maxScore) * 100));
+            const secondPercent = Math.min(100, Math.round((second[1] / maxScore) * 100));
+            const thirdPercent = Math.min(100, Math.round((third[1] / maxScore) * 100));
+            
+            const comboKey1 = `${first[0]}-${second[0]}`;
+            const comboKey2 = `${second[0]}-${first[0]}`;
+            const title = comboTitles[comboKey1] || comboTitles[comboKey2] || firstConfig.combo;
+            
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultSubtitle').textContent = `${firstConfig.name} × ${secondConfig.name}`;
+            document.getElementById('matchScore').textContent = `优势度 ${firstPercent}%`;
+            document.getElementById('resultDesc').textContent = `你拥有突出的${firstConfig.name}和${secondConfig.name}，${firstConfig.desc.substring(0, 40)}...`;
+            
+            const tagsContainer = document.getElementById('resultTags');
+            tagsContainer.innerHTML = [...firstConfig.tags, ...secondConfig.tags].slice(0, 4).map(tag => 
+                `<span class="talent-tag text-white text-xs px-3 py-1 rounded-full font-medium">${tag}</span>`
+            ).join('');
+            
+            document.getElementById('coreAdvantage').textContent = 
+                `你的核心优势是${firstConfig.name}（${firstPercent}%）和${secondConfig.name}（${secondPercent}%）。${firstConfig.desc}同时，${secondConfig.desc.substring(0, 30)}...这种组合让你${getComboDesc(first[0], second[0])}。`;
+            
+            document.querySelector('.second-name').textContent = thirdConfig.name;
+            document.querySelector('.second-desc').textContent = thirdConfig.desc.substring(0, 30) + '...';
+            document.querySelector('.second-score').textContent = thirdPercent + '%';
+            
+            const fourth = sorted[3];
+            const fourthConfig = talentConfig[fourth[0]];
+            const fourthPercent = Math.min(100, Math.round((fourth[1] / maxScore) * 100));
+            document.querySelector('.third-name').textContent = fourthConfig.name;
+            document.querySelector('.third-desc').textContent = fourthConfig.desc.substring(0, 30) + '...';
+            document.querySelector('.third-score').textContent = fourthPercent + '%';
+            
+            drawRadarChart(sorted);
+            showDimensionAnalysis(sorted);
+            showAdvice([first, second, third], [firstPercent, secondPercent, thirdPercent]);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function getComboDesc(first, second) {
+            const descs = {
+                "creativity-logic": "既能天马行空，又能落地执行",
+                "creativity-empathy": "用创意连接人心",
+                "logic-strategy": "理性规划，步步为营",
+                "empathy-strategy": "懂人心，善布局",
+                "adapt-learn": "快速适应，持续进化",
+                "learn-focus": "深度学习，专业精进"
+            };
+            const key1 = `${first}-${second}`;
+            const key2 = `${second}-${first}`;
+            return descs[key1] || descs[key2] || "具备独特的复合优势";
+        }
+
+        function drawRadarChart(sortedScores) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (Chart.getChart("radarChart")) Chart.getChart("radarChart").destroy();
+            
+            const labels = sortedScores.slice(0, 6).map(([key]) => talentConfig[key].name);
+            const data = sortedScores.slice(0, 6).map(([_, score]) => Math.min(10, score / 2.5));
+            const colors = sortedScores.slice(0, 6).map(([key]) => talentConfig[key].color);
+            
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '你的天赋',
+                        data: data,
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        pointBackgroundColor: colors,
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: colors,
+                        borderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: { 
+                                stepSize: 2, 
+                                font: { size: 9 },
+                                color: '#9ca3af'
+                            },
+                            pointLabels: { 
+                                font: { size: 11, weight: '500' },
+                                color: '#4b5563'
+                            },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showDimensionAnalysis(sortedScores) {
+            const container = document.getElementById('dimensionAnalysis');
+            container.innerHTML = sortedScores.map(([key, score], i) => {
+                const config = talentConfig[key];
+                const percent = Math.min(100, Math.round((score / 25) * 100));
+                const level = percent >= 80 ? '极高' : percent >= 60 ? '很高' : percent >= 40 ? '较高' : '一般';
+                
+                return `
+                    <div class="flex items-center gap-3 p-3 bg-white/50 rounded-lg" style="animation: fadeIn 0.3s ease-out ${i * 0.1}s both;">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-lg" style="background: ${config.color}20;">
+                            ${config.icon}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-medium text-gray-700">${config.name}</span>
+                                <span class="text-xs font-bold" style="color: ${config.color};">${percent}%</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div class="h-2 rounded-full transition-all duration-1000" style="width: ${percent}%; background: ${config.color};"></div>
+                                </div>
+                                <span class="text-[10px] text-gray-500 w-8">${level}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showAdvice(top3, percents) {
+            const container = document.getElementById('adviceList');
+            const [first, second, third] = top3;
+            
+            container.innerHTML = `
+                <div class="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+                    <div class="font-semibold text-purple-900 text-sm mb-1">🎯 核心发展方向</div>
+                    <div class="text-purple-800 text-xs leading-relaxed">
+                        重点发挥${talentConfig[first[0]].name}和${talentConfig[second[0]].name}，适合从事${getCareerField(first[0], second[0])}等工作。
+                    </div>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                    <div class="font-semibold text-blue-900 text-sm mb-1">📈 提升建议</div>
+                    <div class="text-blue-800 text-xs leading-relaxed">
+                        ${talentConfig[third[0]].advice}同时注意平衡发展，避免短板限制。
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCareerField(first, second) {
+            const fields = {
+                "creativity-logic": "产品设计、数据分析",
+                "creativity-empathy": "用户体验、品牌策划",
+                "logic-strategy": "商业分析、项目管理",
+                "empathy-strategy": "人力资源、团队管理",
+                "adapt-learn": "创业、跨界咨询",
+                "learn-focus": "学术研究、技术开发"
+            };
+            const key1 = `${first}-${second}`;
+            const key2 = `${second}-${first}`;
+            return fields[key1] || fields[key2] || "综合性创新岗位";
+        }
+
+        function shareResult() {
+            const title = document.getElementById('resultTitle').textContent;
+            const text = `我在【天赋测评】中发现自己是"${title}"！快来测测你的天赋优势：`;
+            
+            if (navigator.share) {
+                navigator.share({ 
+                    title: '天赋测评 - 发现我的核心优势', 
+                    text: text, 
+                    url: window.location.href 
+                });
+            } else {
+                const fullText = text + ' ' + window.location.href;
+                const input = document.createElement('input');
+                input.value = fullText;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                alert('报告文案已复制！快去分享吧～');
+            }
+        }
+
+        function restartTest() {
+            currentQuestion = 0;
+            answers = [];
+            scores = {
+                creativity: 0, logic: 0, empathy: 0, strategy: 0,
+                adapt: 0, learn: 0, focus: 0, intuition: 0
+            };
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 触摸优化
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) e.preventDefault();
+            lastTouchEnd = now;
+        }, false);
+
+        document.body.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.hide-scrollbar')) return;
+            if (document.body.scrollHeight <= window.innerHeight) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
